@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,45 +26,32 @@ typedef struct {
 
 typedef editStruct editArray[MAXCOMM];
 
-// int isdigit(char ch){
-// 	char arr[10] = {'1','2','3','4','5','6','7','8','9','0'};
-// 	for(int i = 0; i < 10; i++){
-// 		if(ch == arr[i]){
-// 			return 1;
-// 		}
-// 	}
-// 	return 0;
-// }
-
 editStruct TexttoEdit (str command){
-
-	if(command[strlen(command)-1] == '\n'){
-		command[strlen(command)-1] = "\0";
-	}
-
 	editStruct editStruct;
-	char *term;
+	char *start, *end;
 
 	if(command[0] == '/') {
 		editStruct.SpecType = text;
-		command = command + 1;
-		term= strchr(command,'/');
-		*term = '\0';
-		strcpy(editStruct.Range.contained_text,command);
-		command = term +1;
-		editStruct.op = command[0];
-		strncpy(editStruct.text, command + 1, strlen(command));
+		start = command + 1;
+		end = strchr(start, '/');
+
+		for(int i = 0; start < end; start++, i++){
+			editStruct.Range.contained_text[i] = *start;
+		}
+		command = end + 1;
+		editStruct.op = command[0];	//doesn't like something right here
+		strncpy(editStruct.text, command, strlen(command));
 
 	}
 	else if(isdigit(command[0])){
 		editStruct.SpecType= line;
 		editStruct.Range.linenumbers[0]= atoi(command);
-		command = command +2;
+		start = command + 2;
 		editStruct.Range.linenumbers[1]= atoi(command);
-		term = strchr(command,'/');
-		command = term +1;
+		end = strchr(command,'/');
+		command = end + 1;
 		editStruct.op = command[0];
-		strncpy(editStruct.text, command +1, strlen(command));
+		strncpy(editStruct.text, command, strlen(command));
 	}
 	else{
 		editStruct.SpecType = none;
@@ -88,9 +76,9 @@ int readInput(FILE* file, editArray *edits) {
 }
 
 
-str* DoEdit(str currentline, editStruct editCmd){
+char* DoEdit(str currentline, editStruct editCmd){
 	int perform_op = 0;
-	str tempString;
+	static str tempString;
 
 	if(editCmd.SpecType == none){
 		perform_op = 1;
@@ -152,27 +140,6 @@ str* DoEdit(str currentline, editStruct editCmd){
 	strlen(search)]);
 					strcpy(currentline, tempString);
 				}
-
-				// str* cmd = editCmd.text;
-				
-				// char *second_slash = strchr(cmd, '/');
-				// str oldtext;
-
-				// strcpy(oldtext, cmd);
-				// cmd = second_slash + 1;
-				// char* third_slash =strchr(cmd,'/');
-				// *third_slash= '\0';
-				// str newtext;
-				// strcpy(newtext, cmd);
-				// str* subStr = strstr(currentline, oldtext);
-
-				// if(subStr != NULL) {
-				// 	strncpy(tempString, currentline, subStr - currentline);
-				// 	tempString[subStr - currentline] = '\0';
-				// 	strcat(tempString, newtext);
-				// 	strcat(tempString, &currentline[(subStr - currentline) + strlen(oldtext)];
-				// 	strcpy(currentline,tempString);
-				// }
 				break;
 			}
 			case 'd':
@@ -191,7 +158,7 @@ str* DoEdit(str currentline, editStruct editCmd){
 	else{
 		strncpy(tempString, currentline, MAXTEXT);
 	}
-	return &tempString;
+	return tempString;
 }
                 
 int main (int argc, char** argv) {
@@ -204,7 +171,7 @@ int main (int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	commandlist = fopen(argv[1], 'r');
+	commandlist = fopen(argv[1], "r");
 
 	if(commandlist == NULL) {
 		fprintf(stderr, "[ERROR] File doesn't exist\n");
